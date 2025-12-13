@@ -58,8 +58,10 @@ export default function Footer() {
             </ul>
           </div>
         </div>
-        <div className="border-t border-border pt-8 text-center text-sm text-muted-foreground">
-          <p>&copy; 2025 snacksnake. All rights reserved.</p>
+
+        <div className="mt-8 pt-8 border-t border-border text-center text-sm text-muted-foreground">
+          <p>&copy; 2024 snacksnake. All rights reserved.</p>
+          <p className="text-xs mt-1 opacity-50">v2.10</p>
         </div>
       </div>
     </footer>

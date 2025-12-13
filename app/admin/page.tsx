@@ -330,10 +330,13 @@ export default function AdminPage() {
       setProductFilePath("")
       setEditingVideoId(null)
       setIsDialogOpen(false)
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "상품 저장에 실패했습니다")
+    } catch (error: any) {
+      console.error(error)
+      const detail = error?.message || error?.error_description || JSON.stringify(error)
+      alert(`상세 오류 내용: ${detail}`)
     } finally {
       setIsSubmitting(false)
+      setProductFilePath("") // Reset file path after save attempt
     }
   }
 
