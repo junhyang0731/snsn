@@ -19,37 +19,31 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   return (
     <Link href={`/product/${product.id}`}>
-      <div className="bg-card rounded-lg overflow-hidden border border-border hover:border-primary transition-all duration-300 cursor-pointer group h-full flex flex-col">
+      <div className="bg-card rounded-lg overflow-hidden border border-border/50 hover:border-primary/50 hover:shadow-lg transition-all duration-300 cursor-pointer group h-full flex flex-col">
         {/* Thumbnail */}
-        <div
-          className="relative overflow-hidden bg-secondary h-48 md:h-56"
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-        >
+        <div className="relative overflow-hidden bg-secondary aspect-video">
           <img
             src={product.thumbnail || "/placeholder.svg"}
             alt={product.title}
-            className={`w-full h-full object-cover transition-transform duration-300 ${isHovered ? "scale-110" : "scale-100"
-              }`}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
-          <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors" />
-
-          {/* Price Badge */}
-          <div className="absolute top-3 right-3 bg-primary text-primary-foreground px-3 py-1 rounded-full font-bold">
-            ₩{product.price.toLocaleString()}
-          </div>
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
         </div>
 
         {/* Content */}
-        <div className="p-4 flex flex-col flex-1">
-          <h3 className="font-bold text-foreground mb-3 line-clamp-2 group-hover:text-primary transition-colors">
+        <div className="p-5 flex flex-col flex-1">
+          <h3 className="font-semibold text-lg text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors">
             {product.title}
           </h3>
 
-          {/* CTA Button */}
-          <button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-2 rounded-lg transition-colors">
-            상세 보기
-          </button>
+          <div className="mt-auto flex items-center justify-between">
+            <span className="text-xl font-bold text-primary">
+              ₩{product.price.toLocaleString()}
+            </span>
+            <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+              자세히 보기 →
+            </span>
+          </div>
         </div>
       </div>
     </Link>
