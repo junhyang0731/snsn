@@ -4,7 +4,8 @@ import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 
-import LanguageOverlay from "@/components/language-overlay"
+import { LanguageProvider } from "@/components/language-provider"
+import GoogleTranslate from "@/components/google-translate"
 
 const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
@@ -18,8 +19,10 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body className={`font-sans antialiased`}>
-        <LanguageOverlay />
-        {children}
+        <LanguageProvider>
+          {children}
+        </LanguageProvider>
+        <GoogleTranslate />
         <Analytics />
       </body>
     </html>

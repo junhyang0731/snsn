@@ -4,6 +4,7 @@ import ProductGrid from "@/components/product-grid"
 import Footer from "@/components/footer"
 import ReviewSection from "@/components/review-section"
 import MainPopup from "@/components/main-popup"
+import { useLanguage } from "@/components/language-provider"
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 
@@ -17,6 +18,7 @@ interface Product {
 }
 
 export default function Home() {
+  const { t } = useLanguage()
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const supabase = createClient()
@@ -129,10 +131,10 @@ export default function Home() {
         <div className="max-w-7xl mx-auto">
           <div className="mb-12">
             <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4 text-balance">
-              최고의 발로란트 치트 & 스크립트
+              {t('hero.title')}
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl text-pretty">
-              안전하고 강력한 기능으로 랭크를 지배하세요. 에임봇, ESP, 월핵 등 다양한 기능을 제공합니다.
+              {t('hero.desc')}
             </p>
           </div>
           <ProductGrid products={products} />

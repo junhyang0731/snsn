@@ -1,11 +1,7 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
   "/admin/page": "app/admin/page.js",
-  "/auth/login/page": "app/auth/login/page.js",
-  "/checkout/[id]/page": "app/checkout/[id]/page.js",
   "/dashboard/page": "app/dashboard/page.js",
-  "/notices/page": "app/notices/page.js",
   "/page": "app/page.js",
-  "/product/[id]/page": "app/product/[id]/page.js",
   "/purchases/page": "app/purchases/page.js"
 }
