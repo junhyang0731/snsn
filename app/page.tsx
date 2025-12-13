@@ -7,6 +7,8 @@ import MainPopup from "@/components/main-popup"
 import { useLanguage } from "@/components/language-provider"
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 interface Product {
   id: string
@@ -117,7 +119,10 @@ export default function Home() {
       <div className="flex flex-col min-h-screen bg-background">
         <Header />
         <main className="flex-1 flex items-center justify-center">
-          <div className="text-center text-muted-foreground">로딩 중...</div>
+          <div className="animate-pulse flex flex-col items-center gap-4">
+            <div className="w-12 h-12 bg-primary/20 rounded-full" />
+            <div className="text-muted-foreground">LOADING SYSTEM...</div>
+          </div>
         </main>
         <Footer />
       </div>
@@ -125,26 +130,67 @@ export default function Home() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <Header />
-      <main className="flex-1 px-4 md:px-8 lg:px-12 py-8 md:py-12">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4 text-balance">
-              {t('hero.title')}
-            </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl text-pretty">
-              {t('hero.desc')}
-            </p>
-          </div>
-          <ProductGrid products={products} />
+    <div className="flex flex-col min-h-screen bg-background relative selection:bg-primary/30">
+      {/* Ambient Background Gradient */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <div className="absolute top-[-20%] left-[20%] w-[50vw] h-[50vw] rounded-full bg-primary/5 blur-[120px] animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-blue-500/5 blur-[100px]" />
+      </div>
 
-          <div id="reviews" className="mt-24 border-t border-border pt-12">
-            <ReviewSection />
+      <Header />
+
+      <main className="flex-1 relative z-10 pt-32 pb-20 px-4 md:px-8">
+
+        {/* Hero Section */}
+        <div className="max-w-6xl mx-auto text-center mb-32 relative">
+          <div className="inline-block px-4 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-primary text-sm font-medium mb-8 animate-fade-in-up">
+            v2.14 Update Live
+          </div>
+
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter mb-8 bg-gradient-to-b from-foreground to-foreground/40 bg-clip-text text-transparent pb-2">
+            {t('hero.title')}
+          </h1>
+
+          <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto mb-12 leading-relaxed font-light">
+            {t('hero.desc')}
+          </p>
+
+          <div className="flex justify-center gap-6">
+            <Link href="#products">
+              <Button size="lg" className="rounded-full px-10 h-14 text-lg font-semibold shadow-[0_0_30px_-5px_var(--primary)] hover:shadow-[0_0_40px_-5px_var(--primary)] transition-all duration-500">
+                Get Access
+              </Button>
+            </Link>
+            <Link href="/notices">
+              <Button size="lg" variant="outline" className="rounded-full px-10 h-14 text-lg border-primary/20 hover:bg-primary/5">
+                View Notices
+              </Button>
+            </Link>
           </div>
         </div>
+
+        {/* Products Section */}
+        <div id="products" className="max-w-7xl mx-auto mb-32">
+          <div className="flex items-end justify-between mb-10 px-2">
+            <div>
+              <h2 className="text-3xl font-bold tracking-tight mb-2">Featured Cheats</h2>
+              <p className="text-muted-foreground">Undetected, Secure, and High Performance</p>
+            </div>
+          </div>
+
+          <div className="p-1">
+            <ProductGrid products={products} />
+          </div>
+        </div>
+
+        {/* Reviews Section */}
+        <div id="reviews" className="max-w-7xl mx-auto py-12 border-t border-border/40">
+          <ReviewSection />
+        </div>
+
         <MainPopup />
       </main>
+
       <Footer />
     </div>
   )

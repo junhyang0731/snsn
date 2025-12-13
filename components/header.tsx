@@ -62,64 +62,66 @@ export default function Header() {
   }
 
   return (
-    <header className="bg-card border-b border-border sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 py-4 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-lg">S</span>
+    <header className="fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-7xl z-50 rounded-2xl border border-border/40 bg-background/70 backdrop-blur-xl shadow-lg transition-all duration-300">
+      <div className="px-6 py-3 flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-2 group">
+          <div className="w-10 h-10 bg-primary/20 rounded-xl flex items-center justify-center group-hover:bg-primary/30 transition-colors">
+            <span className="text-primary font-bold text-xl">S</span>
           </div>
-          <span className="text-xl font-bold text-foreground hidden md:inline">snacksnake</span>
+          <span className="text-xl font-bold text-foreground tracking-tight group-hover:text-primary transition-colors">snacksnake</span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-8">
-          <Link href="/" className="text-foreground hover:text-primary transition-colors">
+        <nav className="hidden md:flex items-center gap-8 bg-secondary/30 px-6 py-2 rounded-full border border-border/20">
+          <Link href="/" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
             {t('nav.all')}
           </Link>
-          <Link href="/notices" className="text-foreground hover:text-primary transition-colors">
+          <Link href="/notices" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
             {t('nav.notices')}
           </Link>
-          <a href="#reviews" className="text-foreground hover:text-primary transition-colors">
+          <a href="#reviews" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
             {t('nav.reviews')}
           </a>
         </nav>
 
-        <div className="flex items-center gap-1 mr-4">
-          <Button variant="ghost" size="icon" onClick={() => changeLanguage('ko')} className={`h-8 w-8 px-0 ${lang === 'ko' ? 'opacity-100 bg-accent/50 scale-110' : 'opacity-40 hover:opacity-100'}`} title="한국어">
-            <span className="text-2xl">🇰🇷</span>
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => changeLanguage('en')} className={`h-8 w-8 px-0 ${lang === 'en' ? 'opacity-100 bg-accent/50 scale-110' : 'opacity-40 hover:opacity-100'}`} title="English">
-            <span className="text-2xl">🇺🇸</span>
-          </Button>
-        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center bg-secondary/30 rounded-full p-1 border border-border/20">
+            <Button variant="ghost" size="icon" onClick={() => changeLanguage('ko')} className={`h-7 w-7 rounded-full ${lang === 'ko' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`} title="한국어">
+              <span className="text-base">🇰🇷</span>
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => changeLanguage('en')} className={`h-7 w-7 rounded-full ${lang === 'en' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`} title="English">
+              <span className="text-base">🇺🇸</span>
+            </Button>
+          </div>
 
-        <div className="flex items-center gap-4">
-          <Link href="/cart" className="hover:text-primary transition-colors">
-            <ShoppingCart size={20} />
+          <Link href="/cart" className="relative group p-2">
+            <ShoppingCart size={20} className="text-muted-foreground group-hover:text-primary transition-colors" />
           </Link>
 
           {!isLoading && (
             <>
               {user ? (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <Link href="/dashboard">
-                    <Button variant="outline" size="sm" className="gap-2 bg-transparent">
+                    <Button variant="ghost" size="sm" className="rounded-full gap-2 hover:bg-primary/10 hover:text-primary">
                       <User size={16} />
-                      {t('dashboard')}
+                      <span className="hidden lg:inline">{t('dashboard')}</span>
                     </Button>
                   </Link>
-                  <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2">
+                  <Button variant="ghost" size="icon" onClick={handleLogout} className="rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10">
                     <LogOut size={16} />
                   </Button>
                 </div>
               ) : (
                 <div className="flex gap-2">
                   <Link href="/auth/login">
-                    <Button variant="outline" size="sm">
+                    <Button variant="ghost" size="sm" className="rounded-full hover:bg-primary/10 hover:text-primary">
                       {t('login')}
                     </Button>
                   </Link>
                   <Link href="/auth/signup">
-                    <Button size="sm">{t('signup')}</Button>
+                    <Button size="sm" className="rounded-full px-5 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
+                      {t('signup')}
+                    </Button>
                   </Link>
                 </div>
               )}

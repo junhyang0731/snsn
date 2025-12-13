@@ -30,26 +30,16 @@ export default function Footer() {
               </li>
             </ul>
           </div>
+          {/* Quick Links Column Removed */}
+
           <div>
-            <h5 className="font-semibold text-foreground mb-3">{t('footer.info')}</h5>
+            <h5 className="font-semibold text-foreground mb-3">{t('footer.contact')}</h5>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>
-                <a href="#" className="hover:text-primary transition-colors">
-                  {t('footer.privacy')}
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-primary transition-colors">
-                  {t('footer.terms')}
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-primary transition-colors">
-                  {t('footer.contact')}
-                </a>
-              </li>
+              <li>Telegram: @snacksnake_support</li>
+              <li>Operating Hours: 24/7</li>
             </ul>
           </div>
+
           <div>
             <h5 className="font-semibold text-foreground mb-3">{t('footer.payment')}</h5>
             <ul className="space-y-2 text-sm text-muted-foreground">
@@ -61,7 +51,7 @@ export default function Footer() {
 
         <div className="mt-8 pt-8 border-t border-border text-center text-sm text-muted-foreground">
           <p>&copy; 2024 snacksnake. All rights reserved.</p>
-          <p className="text-xs mt-1 opacity-50">v2.13</p>
+          <p className="text-xs mt-1 opacity-50">v2.14</p>
         </div>
       </div>
     </footer>
