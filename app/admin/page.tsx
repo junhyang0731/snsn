@@ -402,7 +402,7 @@ export default function AdminPage() {
   }
 
   const handleDeleteVideo = async (videoId: string) => {
-    if (!confirm("이 영상을 삭제하시겠습니까?")) return
+    if (!confirm("이 치트를 삭제하시겠습니까?")) return
 
     try {
       const { error } = await supabase.from("videos").delete().eq("id", videoId)
@@ -552,7 +552,7 @@ export default function AdminPage() {
 
         <Tabs defaultValue="videos" className="w-full">
           <TabsList className="grid w-full grid-cols-4 mb-8">
-            <TabsTrigger value="videos">콘텐츠 관리</TabsTrigger>
+            <TabsTrigger value="videos">치트 관리</TabsTrigger>
             <TabsTrigger value="purchases">구매 내역</TabsTrigger>
             <TabsTrigger value="notices">공지 및 팝업</TabsTrigger>
             <TabsTrigger value="reviews">리뷰 관리</TabsTrigger>
@@ -605,7 +605,7 @@ export default function AdminPage() {
                     <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4 text-primary">
                       <Plus size={24} />
                     </div>
-                    <h3 className="text-lg font-semibold">새 콘텐츠 추가</h3>
+                    <h3 className="text-lg font-semibold">새 치트 추가</h3>
                     <p className="text-sm text-muted-foreground text-center mt-2">
                       클릭하여 새로운 발로란트 치트 상품을 등록하세요
                     </p>
@@ -613,7 +613,7 @@ export default function AdminPage() {
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>{editingVideoId ? "콘텐츠 수정" : "새로운 콘텐츠 등록"}</DialogTitle>
+                    <DialogTitle>{editingVideoId ? "치트 수정" : "새 치트 등록"}</DialogTitle>
                     <DialogDescription>
                       {editingVideoId ? "기존 상품 정보를 수정합니다." : "상품 정보, 가격, 이미지 및 파일을 업로드하세요."}
                     </DialogDescription>
@@ -645,7 +645,7 @@ export default function AdminPage() {
 
                     <div className="grid gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="title">상품명</Label>
+                        <Label htmlFor="title">치트명</Label>
                         <Input
                           id="title"
                           value={title}
@@ -723,7 +723,7 @@ export default function AdminPage() {
                     </div>
 
                     <Button type="submit" disabled={isSubmitting || isUploading || isFileUploading} className="w-full">
-                      {isSubmitting ? "등록 중..." : "콘텐츠 등록하기"}
+                      {isSubmitting ? "등록 중..." : "치트 등록하기"}
                     </Button>
                   </form>
                 </DialogContent>
@@ -754,7 +754,7 @@ export default function AdminPage() {
                       <thead>
                         <tr className="border-b">
                           <th className="text-left py-3 px-4">고객 이메일</th>
-                          <th className="text-left py-3 px-4">상품명</th>
+                          <th className="text-left py-3 px-4">치트명</th>
                           <th className="text-left py-3 px-4">결제 방법</th>
                           <th className="text-left py-3 px-4">구매 시 재고</th>
                           <th className="text-left py-3 px-4">금액</th>

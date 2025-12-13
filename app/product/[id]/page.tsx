@@ -220,7 +220,7 @@ export default function ProductDetailPage() {
             <div className="flex flex-col min-h-screen bg-background">
                 <Header />
                 <main className="flex-1 flex items-center justify-center">
-                    <p>상품을 찾을 수 없습니다.</p>
+                    <p>치트를 찾을 수 없습니다.</p>
                 </main>
                 <Footer />
             </div>
@@ -260,7 +260,7 @@ export default function ProductDetailPage() {
                             </div>
 
                             <div className="mb-8">
-                                <h3 className="text-xl font-bold text-foreground mb-4">상품 설명</h3>
+                                <h3 className="text-xl font-bold text-foreground mb-4">치트 설명</h3>
                                 <p className="text-muted-foreground whitespace-pre-wrap">
                                     {selectedProduct.description.replace(/<!--[\s\S]*?-->/g, "").trim()}
                                 </p>

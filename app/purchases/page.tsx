@@ -102,14 +102,14 @@ export default function PurchasesPage() {
         <div className="max-w-4xl mx-auto">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">구매 이력</h1>
-            <p className="text-muted-foreground">구매한 영상 목록입니다</p>
+            <p className="text-muted-foreground">구매한 치트 목록입니다</p>
           </div>
 
           {purchases.length === 0 ? (
             <Card>
               <CardContent className="pt-6">
                 <div className="text-center py-12">
-                  <p className="text-muted-foreground mb-4">구매한 영상이 없습니다</p>
+                  <p className="text-muted-foreground mb-4">구매한 치트가 없습니다</p>
                   <Link href="/">
                     <Button>쇼핑하러 가기</Button>
                   </Link>

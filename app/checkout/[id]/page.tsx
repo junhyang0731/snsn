@@ -19,15 +19,12 @@ interface Video {
   stock?: number
 }
 
-interface Profile {
-  coin_balance: number
-}
+
 
 export default function CheckoutPage() {
   const params = useParams()
   const router = useRouter()
   const [video, setVideo] = useState<Video | null>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
   const [paymentMethod, setPaymentMethod] = useState<"bank" | "bitcoin" | "litecoin" | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isProcessing, setIsProcessing] = useState(false)
@@ -51,10 +48,7 @@ export default function CheckoutPage() {
 
         const { data: videoData } = await supabase.from("videos").select("*").eq("id", params.id).single()
 
-        const { data: profileData } = await supabase.from("profiles").select("coin_balance").eq("id", user.id).single()
-
         setVideo(videoData as Video)
-        setProfile(profileData as Profile)
       } catch (error) {
         console.error("데이터 로드 실패:", error)
       } finally {
@@ -214,59 +208,7 @@ export default function CheckoutPage() {
     }
   }
 
-  const handleCoinPayment = async () => {
-    setIsProcessing(true)
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user || !video || !profile) throw new Error("데이터 없음")
-
-      // Stock Check
-      const { data: latestVideo } = await supabase.from('videos').select('stock').eq('id', video.id).single()
-      if (latestVideo?.stock !== undefined && latestVideo.stock <= 0) {
-        throw new Error("재고가 소진되었습니다")
-      }
-
-      if (profile.coin_balance < video.price) {
-        throw new Error("코인 잔액이 부족합니다")
-      }
-
-      // Create purchase record
-      const { error: purchaseError } = await supabase.from("purchases").insert({
-        user_id: user.id,
-        video_id: video.id,
-        payment_method: "coin", // Fixed from 'bitcoin' to 'coin'
-        amount: video.price,
-        status: "completed",
-        stock_quantity_at_purchase: latestVideo?.stock // Optional: Record stock at purchase time
-      })
-
-      if (purchaseError) throw purchaseError
-
-      // Update coin balance
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({
-          coin_balance: profile.coin_balance - video.price,
-        })
-        .eq("id", user.id)
-
-      if (updateError) throw updateError
-
-      // Decrement Stock
-      if (latestVideo?.stock !== undefined) {
-        await supabase.from("videos").update({ stock: latestVideo.stock - 1 }).eq("id", video.id)
-      }
-
-      alert("결제 완료되었습니다!")
-      router.push("/purchases")
-    } catch (error) {
-      alert(error instanceof Error ? error.message : "결제 실패")
-    } finally {
-      setIsProcessing(false)
-    }
-  }
+  // handleCoinPayment Removed
 
   if (isLoading) {
     return (
@@ -285,7 +227,7 @@ export default function CheckoutPage() {
       <div className="flex flex-col min-h-screen bg-background">
         <Header />
         <main className="flex-1 flex items-center justify-center">
-          <p>영상을 찾을 수 없습니다</p>
+          <p>치트을 찾을 수 없습니다</p>
         </main>
         <Footer />
       </div>
@@ -353,7 +295,7 @@ export default function CheckoutPage() {
 
                 <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
                   <p className="text-sm text-blue-900">
-                    입금 후 영상이 자동으로 제공됩니다. 입금 확인까지 약 1-2분 소요됩니다.
+                    입금 후 치트이 자동으로 제공됩니다. 입금 확인까지 약 1-2분 소요됩니다.
                   </p>
                 </div>
 
@@ -602,16 +544,7 @@ export default function CheckoutPage() {
                 <p className="text-sm text-muted-foreground">라이트코인으로 즉시 결제</p>
               </button>
 
-              {profile && profile.coin_balance > 0 && (
-                <button
-                  onClick={handleCoinPayment}
-                  disabled={isProcessing || profile.coin_balance < video.price}
-                  className="w-full p-4 rounded-lg border-2 border-border hover:border-primary transition-all text-left hover:bg-secondary/50 disabled:opacity-50"
-                >
-                  <p className="font-semibold text-foreground">코인 결제</p>
-                  <p className="text-sm text-muted-foreground">보유 코인: ${profile.coin_balance}</p>
-                </button>
-              )}
+              {/* Coin Payment Removed */}
             </CardContent>
           </Card>
         </div>
