@@ -6,6 +6,7 @@ import "./globals.css"
 
 import { LanguageProvider } from "@/components/language-provider"
 import GoogleTranslate from "@/components/google-translate"
+import TelegramButton from "@/components/telegram-button"
 
 const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
@@ -21,6 +22,7 @@ export default function RootLayout({
       <body className={`font-sans antialiased`}>
         <LanguageProvider>
           {children}
+          <TelegramButton />
         </LanguageProvider>
         <GoogleTranslate />
         <Analytics />

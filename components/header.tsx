@@ -64,9 +64,9 @@ export default function Header() {
   return (
     <header className="fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-7xl z-50 rounded-2xl border border-border/40 bg-background/70 backdrop-blur-xl shadow-lg transition-all duration-300">
       <div className="px-6 py-3 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-10 h-10 bg-primary/20 rounded-xl flex items-center justify-center group-hover:bg-primary/30 transition-colors">
-            <span className="text-primary font-bold text-xl">S</span>
+        <Link href="/" className="flex items-center gap-3 group">
+          <div className="relative w-10 h-10 transition-transform group-hover:scale-110 duration-300">
+            <img src="/logo.png" alt="Logo" className="w-full h-full object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]" />
           </div>
           <span className="text-xl font-bold text-foreground tracking-tight group-hover:text-primary transition-colors">snacksnake</span>
         </Link>
