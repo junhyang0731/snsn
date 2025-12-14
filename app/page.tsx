@@ -17,6 +17,7 @@ interface Product {
   price: number
   views?: number
   rating?: number
+  game_name?: string
 }
 
 export default function Home() {
@@ -33,6 +34,7 @@ export default function Home() {
       price: 7500,
       views: 1250,
       rating: 4.8,
+      game_name: "Valorant",
     },
     {
       id: "550e8400-e29b-41d4-a716-446655440001",
@@ -41,6 +43,7 @@ export default function Home() {
       price: 9500,
       views: 892,
       rating: 4.7,
+      game_name: "Valorant",
     },
     {
       id: "550e8400-e29b-41d4-a716-446655440002",
@@ -49,6 +52,7 @@ export default function Home() {
       price: 6500,
       views: 2341,
       rating: 4.9,
+      game_name: "Valorant",
     },
     {
       id: "550e8400-e29b-41d4-a716-446655440003",
@@ -81,7 +85,7 @@ export default function Home() {
       try {
         const { data, error } = await supabase
           .from("videos")
-          .select("id, title, thumbnail_url, price")
+          .select("id, title, thumbnail_url, price, game_name")
           .order("created_at", { ascending: false })
 
         if (error) {
@@ -98,6 +102,7 @@ export default function Home() {
             price: v.price,
             views: 0,
             rating: 5.0,
+            game_name: v.game_name || "Valorant",
           }))
           setProducts(dbProducts)
         } else {
@@ -132,10 +137,8 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen bg-background relative selection:bg-primary/30">
       {/* Ambient Background Gradient */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute top-[-20%] left-[20%] w-[50vw] h-[50vw] rounded-full bg-primary/5 blur-[120px] animate-pulse" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-blue-500/5 blur-[100px]" />
-      </div>
+      {/* Clean Background */}
+      <div className="fixed inset-0 pointer-events-none z-0 bg-background" />
 
       <Header />
 
@@ -143,8 +146,8 @@ export default function Home() {
 
         {/* Hero Section */}
         <div className="max-w-6xl mx-auto text-center mb-32 relative">
-          <div className="inline-block px-4 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-primary text-sm font-medium mb-8 animate-fade-in-up">
-            v2.14 Update Live
+          <div className="inline-block px-4 py-1.5 rounded-full border border-border bg-secondary/50 text-foreground/80 text-sm font-medium mb-8">
+            v2.16 Update Live
           </div>
 
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter mb-8 bg-gradient-to-b from-foreground to-foreground/40 bg-clip-text text-transparent pb-2">

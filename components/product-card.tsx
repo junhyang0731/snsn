@@ -11,6 +11,7 @@ interface ProductCardProps {
     price: number
     views?: number
     rating?: number
+    game_name?: string
   }
 }
 
@@ -32,6 +33,9 @@ export default function ProductCard({ product }: ProductCardProps) {
 
         {/* Content */}
         <div className="p-5 flex flex-col flex-1">
+          <span className="text-xs font-semibold text-primary/80 mb-1 block uppercase tracking-wider">
+            {product.game_name || "Valorant"}
+          </span>
           <h3 className="font-semibold text-lg text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors">
             {product.title}
           </h3>

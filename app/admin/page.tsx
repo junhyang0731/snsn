@@ -12,6 +12,7 @@ import { ArrowLeft, Trash2, Plus, Upload, FileText, CreditCard, Edit, Pencil, Re
 import Link from "next/link"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import AdminChatTab from "@/components/admin-chat-tab"
 
 interface Video {
   id: string
@@ -21,6 +22,7 @@ interface Video {
   thumbnail_url: string
   created_at: string
   stock?: number
+  game_name?: string
 }
 
 interface Purchase {
@@ -61,6 +63,7 @@ export default function AdminPage() {
 
   const [searchTerm, setSearchTerm] = useState("")
   const [title, setTitle] = useState("")
+  const [gameName, setGameName] = useState("Valorant")
 
   // Notice Form
   const [noticeTitle, setNoticeTitle] = useState("")
@@ -300,6 +303,7 @@ export default function AdminPage() {
         user_id: user.id,
         is_admin: true,
         stock: stockCount,
+        game_name: gameName,
       }
 
       if (editingVideoId) {
@@ -322,6 +326,7 @@ export default function AdminPage() {
       }
 
       setTitle("")
+      setGameName("Valorant")
       setDescription("")
       setPricingTiers({})
       setStock("999")
@@ -367,6 +372,7 @@ export default function AdminPage() {
     setEditingVideoId(video.id)
     setTitle(video.title)
     setStock(video.stock?.toString() || "999")
+    setGameName(video.game_name || "Valorant")
     setThumbnailUrl(video.thumbnail_url)
 
     // Parse Description for Pricing and File URL
@@ -556,6 +562,7 @@ export default function AdminPage() {
             <TabsTrigger value="purchases">구매 내역</TabsTrigger>
             <TabsTrigger value="notices">공지 및 팝업</TabsTrigger>
             <TabsTrigger value="reviews">리뷰 관리</TabsTrigger>
+            <TabsTrigger value="chat">1:1 답변</TabsTrigger>
           </TabsList>
 
           <TabsContent value="videos" className="space-y-6">
@@ -644,6 +651,15 @@ export default function AdminPage() {
                     </div>
 
                     <div className="grid gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="game_name">게임 이름 (카테고리)</Label>
+                        <Input
+                          id="game_name"
+                          value={gameName}
+                          onChange={(e) => setGameName(e.target.value)}
+                          placeholder="예: Valorant, Roblox - Blox Fruits"
+                        />
+                      </div>
                       <div className="space-y-2">
                         <Label htmlFor="title">치트명</Label>
                         <Input
@@ -891,6 +907,17 @@ export default function AdminPage() {
                     </tbody>
                   </table>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="chat">
+            <Card>
+              <CardHeader>
+                <CardTitle>1:1 문의 관리</CardTitle>
+                <CardDescription>고객과 실시간으로 대화하세요.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AdminChatTab />
               </CardContent>
             </Card>
           </TabsContent>

@@ -18,6 +18,7 @@ interface Product {
     thumbnail_url: string
     created_at: string
     stock?: number
+    game_name?: string
 }
 
 const mockProducts: Product[] = [
@@ -247,6 +248,10 @@ export default function ProductDetailPage() {
                                     className="w-full h-auto aspect-video object-cover"
                                 />
                             </div>
+
+                            <span className="text-primary font-bold tracking-wider uppercase text-sm mb-2 block">
+                                {selectedProduct.game_name || "Valorant"}
+                            </span>
 
                             <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4 text-balance">
                                 {selectedProduct.title}
