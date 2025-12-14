@@ -115,6 +115,14 @@ export default function ChatWidget() {
             })
 
             if (error) throw error
+
+            // Notify Telegram
+            fetch("/api/chat-notify", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userId: user.id, content: content })
+            })
+
             // Message will appear via Realtime
         } catch (error: any) {
             console.error("Failed to send message", error)

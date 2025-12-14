@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { sendTelegramMessage } from '@/lib/telegram-client'
 
 // Initialize Supabase Admin Client
 // REQUIRES: SUPABASE_SERVICE_ROLE_KEY in .env.local
@@ -27,8 +28,9 @@ export async function POST(request: Request) {
 
             if (data.startsWith("approve:")) {
                 const purchaseId = data.split(":")[1]
+                // ... (existing codes) ...
 
-                // Fetch purchase to get basics
+                // (Existing approval logic)
                 const { data: purchase, error: fetchError } = await supabaseAdmin
                     .from('purchases')
                     .select('*')
@@ -36,31 +38,32 @@ export async function POST(request: Request) {
                     .single()
 
                 if (fetchError || !purchase) {
-                    await sendMessage(chatId, "⚠️ 이미 처리되었거나 찾을 수 없는 주문입니다.")
+                    await sendTelegramMessage(chatId, "⚠️ 이미 처리되었거나 찾을 수 없는 주문입니다.")
                     return NextResponse.json({ ok: true })
                 }
 
                 if (purchase.status === 'completed') {
-                    await sendMessage(chatId, "✅ 이미 승인된 주문입니다.")
+                    await sendTelegramMessage(chatId, "✅ 이미 승인된 주문입니다.")
                     return NextResponse.json({ ok: true })
                 }
 
-                // Update Status
                 const { error: updateError } = await supabaseAdmin
                     .from('purchases')
                     .update({ status: 'completed' })
                     .eq('id', purchaseId)
 
                 if (updateError) {
-                    await sendMessage(chatId, `❌ 승인 실패: ${updateError.message}`)
+                    await sendTelegramMessage(chatId, `❌ 승인 실패: ${updateError.message}`)
                 } else {
-                    // Extract name from payment_method
-                    // format: bank_transfer:Bank:Name
                     const parts = purchase.payment_method?.split(':') || []
                     const name = parts.length > 2 ? parts[2] : "구매자"
-
-                    await sendMessage(chatId, `✅ <b>${name}</b>님의 주문이 승인되었습니다.\n금액: ${purchase.amount.toLocaleString()}원`)
+                    await sendTelegramMessage(chatId, `✅ <b>${name}</b>님의 주문이 승인되었습니다.\n금액: ${purchase.amount.toLocaleString()}원`)
                 }
+            } else if (data.startsWith("reply_chat:")) {
+                const targetUserId = data.split(":")[1]
+                await sendTelegramMessage(chatId, `💬 [user:${targetUserId}] 님에게 답장을 입력하세요.`, {
+                    reply_markup: { force_reply: true }
+                })
             }
             return NextResponse.json({ ok: true })
         }
@@ -73,6 +76,43 @@ export async function POST(request: Request) {
         const chatId = update.message.chat.id
         const text = update.message.text.trim()
 
+        // Handle Reply to Chat Message
+        if (update.message.reply_to_message) {
+            const originalText = update.message.reply_to_message.text
+            const match = originalText.match(/\[user:([a-f0-9-]+)\]/)
+
+            if (match && match[1]) {
+                const targetUserId = match[1]
+
+                // Insert into messages table
+                const { error } = await supabaseAdmin.from('messages').insert({
+                    user_id: targetUserId,
+                    content: text,
+                    is_admin: true
+                })
+
+                if (error) {
+                    await sendTelegramMessage(chatId, `❌ 전송 실패: ${error.message}`)
+                } else {
+                    await sendTelegramMessage(chatId, `✅ 전송 완료`)
+                }
+                return NextResponse.json({ ok: true })
+            }
+        }
+
+        // Command: /start (Register Admin)
+        if (text === "/start") {
+            // Create table if not exists (Hack, better via SQL)
+            // We just insert to 'admin_telegram_ids'
+            const { error } = await supabaseAdmin.from('admin_telegram_ids').upsert({ chat_id: chatId })
+            if (error) {
+                await sendTelegramMessage(chatId, "❌ 등록 실패. 'admin_telegram_ids' 테이블이 있는지 확인하세요.")
+            } else {
+                await sendTelegramMessage(chatId, "✅ 관리자 알림이 등록되었습니다.")
+            }
+            return NextResponse.json({ ok: true })
+        }
+
         // Command: /전체
         if (text === "/전체") {
             const { data: purchases, error } = await supabaseAdmin
@@ -82,12 +122,12 @@ export async function POST(request: Request) {
                 .order('created_at', { ascending: false })
 
             if (error) {
-                await sendMessage(chatId, "DB Error")
+                await sendTelegramMessage(chatId, "DB Error")
                 return NextResponse.json({ ok: true })
             }
 
             if (!purchases || purchases.length === 0) {
-                await sendMessage(chatId, "현재 대기 중인 입금 내역이 없습니다.")
+                await sendTelegramMessage(chatId, "현재 대기 중인 입금 내역이 없습니다.")
                 return NextResponse.json({ ok: true })
             }
 
@@ -100,7 +140,7 @@ export async function POST(request: Request) {
             })
             msg += "이름을 입력하면 승인 메뉴가 뜹니다."
 
-            await sendMessage(chatId, msg)
+            await sendTelegramMessage(chatId, msg)
             return NextResponse.json({ ok: true })
         }
 
@@ -114,12 +154,12 @@ export async function POST(request: Request) {
             .ilike('payment_method', `%:${depositorName}`)
 
         if (error) {
-            await sendMessage(chatId, `Error: ${error.message}`)
+            await sendTelegramMessage(chatId, `Error: ${error.message}`)
             return NextResponse.json({ ok: true })
         }
 
         if (!purchases || purchases.length === 0) {
-            await sendMessage(chatId, `❌ '${depositorName}' 님으로 대기 중인 주문이 없습니다.`)
+            await sendTelegramMessage(chatId, `❌ '${depositorName}' 님으로 대기 중인 주문이 없습니다.`)
             return NextResponse.json({ ok: true })
         }
 
@@ -131,7 +171,13 @@ export async function POST(request: Request) {
 
             const message = `🔎 <b>입금 확인 요청</b>\n\n🏦 <b>${bank} ${name}</b> 이 맞습니까?\n💰 필요 금액: <b>${p.amount.toLocaleString()}원</b>\n📦 상품: ${p.video?.title}\n\n승인하시겠습니까?`
 
-            await sendMessageWithButton(chatId, message, p.id)
+            await sendTelegramMessage(chatId, message, {
+                reply_markup: {
+                    inline_keyboard: [[
+                        { text: "✅ 승인하기", callback_data: `approve:${p.id}` }
+                    ]]
+                }
+            })
         }
 
         return NextResponse.json({ ok: true })
@@ -142,41 +188,4 @@ export async function POST(request: Request) {
     }
 }
 
-async function sendMessage(chatId: number, text: string) {
-    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`
-    try {
-        await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                chat_id: chatId,
-                text,
-                parse_mode: 'HTML'  // Allow bold text
-            }),
-        })
-    } catch (e) {
-        console.error("Failed to send Telegram message", e)
-    }
-}
 
-async function sendMessageWithButton(chatId: number, text: string, purchaseId: string) {
-    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`
-    try {
-        await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                chat_id: chatId,
-                text,
-                parse_mode: 'HTML',
-                reply_markup: {
-                    inline_keyboard: [[
-                        { text: "✅ 승인하기", callback_data: `approve:${purchaseId}` }
-                    ]]
-                }
-            }),
-        })
-    } catch (e) {
-        console.error("Failed to send Telegram message", e)
-    }
-}
