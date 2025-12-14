@@ -73,8 +73,23 @@ export default function ChatWidget() {
             )
             .subscribe()
 
+
+
+        // Safety Polling
+        const interval = setInterval(() => {
+            supabase
+                .from("messages")
+                .select("*")
+                .eq("user_id", user.id)
+                .order("created_at", { ascending: true })
+                .then(({ data }) => {
+                    if (data) setMessages(data)
+                })
+        }, 5000)
+
         return () => {
             supabase.removeChannel(channel)
+            clearInterval(interval)
         }
     }, [user, isOpen, supabase])
 
