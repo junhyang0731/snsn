@@ -10,16 +10,26 @@ const supabaseAdmin = createClient(
 
 export async function POST(request: Request) {
     try {
-        const { userId, content } = await request.json()
+        const body = await request.json()
+        const { userId, content } = body
+
+        console.log(`[Chat Notify] Request received for ${userId}`)
 
         // Get admin telegram IDs
-        const { data: admins } = await supabaseAdmin.from("admin_telegram_ids").select("chat_id")
+        const { data: admins, error } = await supabaseAdmin.from("admin_telegram_ids").select("chat_id")
+
+        if (error) {
+            console.error("[Chat Notify] DB Error:", error)
+            return NextResponse.json({ error: error.message }, { status: 500 })
+        }
 
         // If no admins registered, just return
         if (!admins || admins.length === 0) {
-            console.log("No admins registered for Telegram notifications.")
-            return NextResponse.json({ ok: true })
+            console.log("[Chat Notify] No admins found in DB.")
+            return NextResponse.json({ ok: false, reason: "No admins" })
         }
+
+        console.log(`[Chat Notify] Found ${admins.length} admins. Sending...`)
 
         const time = new Date().toLocaleString("ko-KR", {
             timeZone: "Asia/Seoul",
@@ -31,23 +41,23 @@ export async function POST(request: Request) {
             minute: '2-digit'
         })
 
-        // Format: [2024-12-14 PM06:20]
-        // Actually simplified:
-        const message = `[user:${userId}]\n[${time}]\n[내용: ${content}]`
+        const message = `💬 <b>1:1 문의 도착</b>\n\n[User]: ${userId}\n[Time]: ${time}\n\n${content}`
 
-        for (const admin of admins) {
-            await sendTelegramMessage(admin.chat_id, message, {
+        const results = await Promise.all(admins.map(admin =>
+            sendTelegramMessage(admin.chat_id, message, {
                 reply_markup: {
                     inline_keyboard: [[
-                        { text: "이곳에 답장하기", callback_data: `reply_chat:${userId}` }
+                        { text: "✉️ 답장하기", callback_data: `reply_chat:${userId}` }
                     ]]
                 }
             })
-        }
+        ))
+
+        console.log("[Chat Notify] Current Status: Done")
 
         return NextResponse.json({ ok: true })
     } catch (e) {
-        console.error("Chat Notify Error", e)
+        console.error("[Chat Notify] Critical Error", e)
         return NextResponse.json({ error: 'Error' }, { status: 500 })
     }
 }
