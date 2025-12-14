@@ -49,10 +49,32 @@ export default function AdminChatTab() {
             )
             .subscribe()
 
+        // Polling fallback (Safety net)
+        const interval = setInterval(() => {
+            fetchChatUsers()
+            if (activeUserId) {
+                // If active chat exists, fetch messages silently
+                supabase
+                    .from("messages")
+                    .select("*")
+                    .eq("user_id", activeUserId)
+                    .order("created_at", { ascending: true })
+                    .then(({ data }) => {
+                        if (data) {
+                            // Only update if length changed to avoid flickering/scroll issues?
+                            // actually React reconciler handles it reasonably well usually.
+                            // But better to check or just set setMessages.
+                            setMessages(data)
+                        }
+                    })
+            }
+        }, 5000)
+
         return () => {
             supabase.removeChannel(channel)
+            clearInterval(interval)
         }
-    }, [])
+    }, [activeUserId]) // Add dependency to activeUserId to poll messages correctly
 
     useEffect(() => {
         if (activeUserId) {
