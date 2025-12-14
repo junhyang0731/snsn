@@ -88,18 +88,23 @@ export default function ChatWidget() {
         e.preventDefault()
         if (!inputValue.trim() || !user) return
 
+        const content = inputValue
+        setInputValue("") // Clear input immediately
         setIsSending(true)
+
         try {
             const { error } = await supabase.from("messages").insert({
                 user_id: user.id,
-                content: inputValue,
+                content: content,
                 is_admin: false,
             })
 
             if (error) throw error
-            setInputValue("")
-        } catch (error) {
+            // Message will appear via Realtime
+        } catch (error: any) {
             console.error("Failed to send message", error)
+            alert("메시지 전송 실패: " + (error.message || "알 수 없는 오류"))
+            setInputValue(content) // Restore input
         } finally {
             setIsSending(false)
         }
@@ -164,8 +169,8 @@ export default function ChatWidget() {
                                 >
                                     <div
                                         className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${msg.is_admin
-                                                ? "bg-card border border-border text-foreground rounded-tl-none"
-                                                : "bg-primary text-primary-foreground rounded-tr-none shadow-sm"
+                                            ? "bg-card border border-border text-foreground rounded-tl-none"
+                                            : "bg-primary text-primary-foreground rounded-tr-none shadow-sm"
                                             }`}
                                     >
                                         {msg.content}

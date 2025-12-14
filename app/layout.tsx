@@ -7,6 +7,7 @@ import "./globals.css"
 import { LanguageProvider } from "@/components/language-provider"
 import GoogleTranslate from "@/components/google-translate"
 import ChatWidget from "@/components/chat-widget"
+import GlobalBackButton from "@/components/global-back-button"
 
 const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
@@ -23,6 +24,7 @@ export default function RootLayout({
         <LanguageProvider>
           {children}
           <ChatWidget />
+          <GlobalBackButton />
         </LanguageProvider>
         <GoogleTranslate />
         <Analytics />

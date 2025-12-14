@@ -30,7 +30,7 @@ export default function LoginPage() {
         password,
       })
       if (error) throw error
-      router.push("/dashboard")
+      router.push("/")
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "로그인에 실패했습니다")
     } finally {
