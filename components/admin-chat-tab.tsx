@@ -61,9 +61,6 @@ export default function AdminChatTab() {
                     .order("created_at", { ascending: true })
                     .then(({ data }) => {
                         if (data) {
-                            // Only update if length changed to avoid flickering/scroll issues?
-                            // actually React reconciler handles it reasonably well usually.
-                            // But better to check or just set setMessages.
                             setMessages(data)
                         }
                     })
@@ -74,11 +71,22 @@ export default function AdminChatTab() {
             supabase.removeChannel(channel)
             clearInterval(interval)
         }
-    }, [activeUserId]) // Add dependency to activeUserId to poll messages correctly
+    }, [activeUserId])
 
     useEffect(() => {
         if (activeUserId) {
             fetchMessages(activeUserId)
+            // Mark as read immediately
+            fetch('/api/messages/mark-read', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ targetUserId: activeUserId })
+            }).then(() => {
+                // Update local state to reflect read status
+                setChatUsers(prev => prev.map(u =>
+                    u.id === activeUserId ? { ...u, unreadCount: 0 } : u
+                ))
+            })
         }
     }, [activeUserId])
 
@@ -89,23 +97,21 @@ export default function AdminChatTab() {
     }, [messages])
 
     const fetchChatUsers = async () => {
-        setIsLoading(true)
+        // Don't set loading true on every poll, causes flicker
+        if (chatUsers.length === 0) setIsLoading(true)
+
         try {
-            // Fetch all messages to group by user (Optimization needed for production)
             const { data: allMessages, error } = await supabase
                 .from("messages")
-                .select("user_id, content, created_at, is_read")
+                .select("user_id, content, created_at, is_read, is_admin")
                 .order("created_at", { ascending: false })
 
             if (error) throw error
             if (!allMessages) return
 
             const usersMap = new Map<string, ChatUser>()
-
-            // Get unique User IDs
             const userIds = Array.from(new Set(allMessages.map(m => m.user_id)))
 
-            // Fetch Profiles
             const { data: profiles } = await supabase
                 .from("profiles")
                 .select("id, email")
@@ -121,10 +127,14 @@ export default function AdminChatTab() {
                         email: profile?.email || "Unknown User",
                         lastMessage: msg.content,
                         lastMessageTime: msg.created_at,
-                        unreadCount: 0
+                        unreadCount: (!msg.is_read && !msg.is_admin) ? 1 : 0
                     })
+                } else {
+                    const user = usersMap.get(msg.user_id)!
+                    if (!msg.is_read && !msg.is_admin) {
+                        user.unreadCount = (user.unreadCount || 0) + 1
+                    }
                 }
-                // simplistic unread logic could go here
             })
 
             setChatUsers(Array.from(usersMap.values()))
@@ -136,28 +146,31 @@ export default function AdminChatTab() {
     }
 
     const handleNewMessage = (msg: Message) => {
-        // Update Users List (Bump to top)
         setChatUsers(prev => {
-            const others = prev.filter(u => u.id !== msg.user_id)
-            const target = prev.find(u => u.id === msg.user_id)
+            const existing = prev.find(u => u.id === msg.user_id)
+            if (existing) {
+                const isCurrentChat = (activeUserId === msg.user_id)
+                // If admin msg or current chat open, unread = 0. Else +1
+                const newUnread = (msg.is_admin || isCurrentChat) ? 0 : (existing.unreadCount || 0) + 1
 
-            // Need to fetch email if new user
-            const updatedUser = target ? {
-                ...target,
-                lastMessage: msg.content,
-                lastMessageTime: msg.created_at
-            } : {
-                id: msg.user_id,
-                email: "New User (Refresh)", // Simplification
-                lastMessage: msg.content,
-                lastMessageTime: msg.created_at,
-                unreadCount: 1
+                const updated = {
+                    ...existing,
+                    lastMessage: msg.content,
+                    lastMessageTime: msg.created_at,
+                    unreadCount: newUnread
+                }
+                return [updated, ...prev.filter(u => u.id !== msg.user_id)]
+            } else {
+                return [{
+                    id: msg.user_id,
+                    email: "New User (Refresh)",
+                    lastMessage: msg.content,
+                    lastMessageTime: msg.created_at,
+                    unreadCount: 1
+                }, ...prev]
             }
-
-            return [updatedUser, ...others]
         })
 
-        // If active chat
         if (activeUserId === msg.user_id) {
             setMessages(prev => [...prev, msg])
         }
@@ -178,7 +191,7 @@ export default function AdminChatTab() {
         if (!input.trim() || !activeUserId) return
 
         const content = input
-        setInput("") // Clear immediately
+        setInput("")
 
         // Optimistic Update
         const optimisticMsg: Message = {
@@ -201,8 +214,8 @@ export default function AdminChatTab() {
         } catch (error: any) {
             console.error("Failed to send", error)
             alert("답장 전송 실패: " + error.message)
-            setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id)) // Rollback
-            setInput(content) // Restore input
+            setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id))
+            setInput(content)
         }
     }
 
@@ -229,7 +242,14 @@ export default function AdminChatTab() {
                                         <AvatarFallback><UserIcon size={16} /></AvatarFallback>
                                     </Avatar>
                                     <div className="flex-1 overflow-hidden">
-                                        <p className="font-medium truncate">{user.email}</p>
+                                        <div className="flex justify-between items-center">
+                                            <p className="font-medium truncate">{user.email}</p>
+                                            {user.unreadCount && user.unreadCount > 0 ? (
+                                                <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold ml-2">
+                                                    {user.unreadCount}
+                                                </span>
+                                            ) : null}
+                                        </div>
                                         <p className="text-xs text-muted-foreground truncate">{user.lastMessage}</p>
                                     </div>
                                     <span className="text-[10px] text-muted-foreground whitespace-nowrap">
