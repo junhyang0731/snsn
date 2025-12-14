@@ -37,7 +37,7 @@ export default function AdminChatTab() {
     useEffect(() => {
         fetchChatUsers()
 
-        // Subscribe to all messages
+        // Subscribe to all messages (INSERT)
         const channel = supabase
             .channel('admin_chat_global')
             .on(
@@ -155,15 +155,32 @@ export default function AdminChatTab() {
         e.preventDefault()
         if (!input.trim() || !activeUserId) return
 
+        const content = input
+        setInput("") // Clear immediately
+
+        // Optimistic Update
+        const optimisticMsg: Message = {
+            id: Date.now().toString(),
+            user_id: activeUserId,
+            content: content,
+            is_admin: true,
+            created_at: new Date().toISOString(),
+            is_read: true
+        }
+        setMessages(prev => [...prev, optimisticMsg])
+
         try {
-            await supabase.from("messages").insert({
+            const { error } = await supabase.from("messages").insert({
                 user_id: activeUserId,
-                content: input,
+                content: content,
                 is_admin: true
             })
-            setInput("")
-        } catch (error) {
+            if (error) throw error
+        } catch (error: any) {
             console.error("Failed to send", error)
+            alert("답장 전송 실패: " + error.message)
+            setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id)) // Rollback
+            setInput(content) // Restore input
         }
     }
 
@@ -215,8 +232,8 @@ export default function AdminChatTab() {
                             {messages.map(msg => (
                                 <div key={msg.id} className={`flex ${msg.is_admin ? "justify-end" : "justify-start"}`}>
                                     <div className={`max-w-[70%] rounded-2xl px-4 py-2 text-sm ${msg.is_admin
-                                            ? "bg-primary text-primary-foreground rounded-tr-none"
-                                            : "bg-secondary text-secondary-foreground rounded-tl-none border border-border"
+                                        ? "bg-primary text-primary-foreground rounded-tr-none"
+                                        : "bg-secondary text-secondary-foreground rounded-tl-none border border-border"
                                         }`}>
                                         {msg.content}
                                     </div>
