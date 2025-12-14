@@ -1,4 +1,5 @@
 import { useLanguage } from "@/components/language-provider"
+import FeedbackModal from "./feedback-modal"
 
 export default function Footer() {
   const { t } = useLanguage()
@@ -37,6 +38,7 @@ export default function Footer() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>Telegram: @snacksnake_support</li>
               <li>Email: support@snsn.store</li>
+              <li><FeedbackModal /></li>
               <li>Operating Hours: 24/7</li>
             </ul>
           </div>
@@ -52,7 +54,7 @@ export default function Footer() {
 
         <div className="mt-8 pt-8 border-t border-border text-center text-sm text-muted-foreground">
           <p>&copy; 2024 snacksnake. All rights reserved.</p>
-          <p className="text-xs mt-1 opacity-50">v2.21</p>
+          <p className="text-xs mt-1 opacity-50">v2.22</p>
         </div>
       </div>
     </footer>
