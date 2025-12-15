@@ -5,12 +5,13 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { ShoppingCart, LogOut, User, Globe } from "lucide-react"
+import { ShoppingCart, LogOut, User, Globe, Menu, X } from "lucide-react"
 import { useLanguage } from "@/components/language-provider"
 
 export default function Header() {
   const { t, lang, setLang } = useLanguage()
   const [user, setUser] = useState<any>(null)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   const changeLanguage = (targetLang: 'ko' | 'en') => {
     setLang(targetLang)
@@ -127,8 +128,38 @@ export default function Header() {
               )}
             </>
           )}
+
+          {/* Mobile Menu Toggle */}
+          <button className="md:hidden p-2 text-muted-foreground hover:text-foreground" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
         </div>
       </div>
+
+      {/* Mobile Navigation Menu */}
+      {isMenuOpen && (
+        <div className="md:hidden absolute top-full left-0 w-full bg-background/95 backdrop-blur-xl border-t border-border p-6 flex flex-col gap-4 shadow-2xl rounded-b-2xl animate-in slide-in-from-top-2">
+          <Link href="/" onClick={() => setIsMenuOpen(false)} className="text-lg font-medium p-2 hover:bg-secondary/50 rounded-lg transition-colors">
+            {t('nav.all')}
+          </Link>
+          <Link href="/notices" onClick={() => setIsMenuOpen(false)} className="text-lg font-medium p-2 hover:bg-secondary/50 rounded-lg transition-colors">
+            {t('nav.notices')}
+          </Link>
+          <a href="#reviews" onClick={() => setIsMenuOpen(false)} className="text-lg font-medium p-2 hover:bg-secondary/50 rounded-lg transition-colors">
+            {t('nav.reviews')}
+          </a>
+
+          <div className="h-px bg-border my-2" />
+
+          <div className="flex items-center justify-between p-2">
+            <span className="text-muted-foreground text-sm">Language</span>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" onClick={() => { changeLanguage('ko'); setIsMenuOpen(false); }}>🇰🇷</Button>
+              <Button variant="ghost" size="sm" onClick={() => { changeLanguage('en'); setIsMenuOpen(false); }}>🇺🇸</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   )
 }
