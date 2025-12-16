@@ -54,7 +54,7 @@ export default function Footer() {
 
         <div className="mt-8 pt-8 border-t border-border text-center text-sm text-muted-foreground">
           <p>&copy; 2024 snacksnake. All rights reserved.</p>
-          <p className="text-xs mt-1 opacity-50">v2.29</p>
+          <p className="text-xs mt-1 opacity-50">v2.30</p>
         </div>
       </div>
     </footer>

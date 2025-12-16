@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import AdminChatTab from "@/components/admin-chat-tab"
 import AdminStockTab from "@/components/admin-stock-tab"
+import AdminPatchNotesTab from "@/components/admin-patch-notes-tab"
 
 interface Video {
   id: string
