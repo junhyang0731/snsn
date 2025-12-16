@@ -32,6 +32,22 @@ export default function MyPurchasesPage() {
     fetchMyPurchases()
   }, [])
 
+  const handleDownload = async (stockId: string) => {
+    try {
+      const response = await fetch('/api/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stockId })
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || '다운로드 링크 생성 실패')
+
+      window.open(data.url, '_blank')
+    } catch (e: any) {
+      alert(e.message)
+    }
+  }
+
   const fetchMyPurchases = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
@@ -146,17 +162,15 @@ export default function MyPurchasesPage() {
                       <div className="mt-4">
                         {purchase.status === 'completed' ? (
                           purchase.stock_item ? (
-                            <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 flex items-center justify-between">
+                            <div className="flex bg-green-500/10 border border-green-500/20 rounded-lg p-3 items-center justify-between">
                               <div className="flex items-center gap-2 text-green-700">
                                 <CheckCircle2 size={18} />
                                 <span className="font-medium text-sm">상품이 준비되었습니다.</span>
                                 <span className="text-xs opacity-70">({purchase.stock_item.filename})</span>
                               </div>
-                              <a href={purchase.stock_item.file_url} target="_blank" rel="noopener noreferrer">
-                                <Button size="sm" className="gap-2">
-                                  <Download size={16} /> 다운로드
-                                </Button>
-                              </a>
+                              <Button size="sm" className="gap-2" onClick={() => handleDownload(purchase.stock_item!.id)}>
+                                <Download size={16} /> 다운로드
+                              </Button>
                             </div>
                           ) : (
                             <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 flex items-center gap-2 text-yellow-700">

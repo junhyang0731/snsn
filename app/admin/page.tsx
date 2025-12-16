@@ -667,11 +667,7 @@ export default function AdminPage() {
                           <img src={thumbnailUrl} alt="Preview" className="w-full h-full object-cover" />
                         </div>
                       )}
-                      {thumbnailUrl && (
-                        <p className="text-xs text-muted-foreground mt-1 break-all bg-gray-100 p-1 rounded">
-                          URL: {thumbnailUrl}
-                        </p>
-                      )}
+
                     </div>
 
                     <div className="grid gap-4">
