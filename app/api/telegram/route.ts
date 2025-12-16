@@ -34,7 +34,7 @@ export async function POST(request: Request) {
                 // (Existing approval logic)
                 const { data: purchase, error: fetchError } = await supabaseAdmin
                     .from('purchases')
-                    .select('*, video:videos(title)')
+                    .select('*, video:videos(title, stock, description)')
                     .eq('id', purchaseId)
                     .single()
 
@@ -48,43 +48,91 @@ export async function POST(request: Request) {
                     return NextResponse.json({ ok: true })
                 }
 
-                // 1. Check & Lock Stock (FIFO)
-                const { data: stockItem, error: stockError } = await supabaseAdmin
-                    .from('product_stock')
-                    .select('id, filename')
-                    .eq('product_id', purchase.video_id)
-                    .eq('is_sold', false)
-                    .order('created_at', { ascending: true })
-                    .limit(1)
-                    .single()
+                // Check for Unlimited Stock (Common File)
+                const videoData = purchase.video as any // Type assertion needed if TS complains
+                const priceMatch = videoData?.description?.match(/<!--PRICING:(.*?)-->/)
+                const fileMatch = videoData?.description?.match(/<!--FILE_URL:(.*?)-->/)
+                const pathMatch = videoData?.description?.match(/<!--FILE_PATH:(.*?)-->/)
 
-                if (stockError || !stockItem) {
-                    await sendTelegramMessage(chatId, `⚠️ 승인 실패: '${purchase.video?.title || "상품"}' 재고가 부족합니다!\n(관리자 페이지에서 재고를 추가해주세요)`)
-                    return NextResponse.json({ ok: true })
+                const isUnlimited = (videoData?.stock >= 99990) || !!fileMatch || !!pathMatch
+                let assignedFilename = "download.zip" // To capture filename for message
+
+                if (isUnlimited) {
+                    // [Unlimited Mode]
+                    let fileUrl = ""
+                    if (fileMatch && fileMatch[1]) {
+                        fileUrl = fileMatch[1]
+                        assignedFilename = "Common File"
+                    } else if (pathMatch && pathMatch[1]) {
+                        const { data: { publicUrl } } = supabaseAdmin.storage
+                            .from("product-files")
+                            .getPublicUrl(pathMatch[1])
+                        fileUrl = publicUrl
+                        assignedFilename = pathMatch[1].split('/').pop() || "download.zip"
+                    }
+
+                    if (!fileUrl) {
+                        await sendTelegramMessage(chatId, "⚠️ 오류: 무제한 재고 설정이나 파일 URL을 찾을 수 없습니다.")
+                        return NextResponse.json({ ok: true })
+                    }
+
+                    const { error: insertError } = await supabaseAdmin
+                        .from('product_stock')
+                        .insert({
+                            product_id: purchase.video_id,
+                            content: "Unlimited Stock Item",
+                            filename: assignedFilename,
+                            file_url: fileUrl,
+                            is_sold: true,
+                            buyer_id: purchase.user_id,
+                            sold_at: new Date().toISOString()
+                        })
+
+                    if (insertError) {
+                        await sendTelegramMessage(chatId, "❌ 시스템 오류: 무제한 재고 생성 실패")
+                        return NextResponse.json({ ok: true })
+                    }
+
+                } else {
+                    // [FIFO Mode]
+                    const { data: stockItem, error: stockError } = await supabaseAdmin
+                        .from('product_stock')
+                        .select('id, filename')
+                        .eq('product_id', purchase.video_id)
+                        .eq('is_sold', false)
+                        .order('created_at', { ascending: true })
+                        .limit(1)
+                        .single()
+
+                    if (stockError || !stockItem) {
+                        await sendTelegramMessage(chatId, `⚠️ 승인 실패: '${purchase.video?.title || "상품"}' 재고가 부족합니다!`)
+                        return NextResponse.json({ ok: true })
+                    }
+
+                    assignedFilename = stockItem.filename
+
+                    const { error: stockUpdateError } = await supabaseAdmin
+                        .from('product_stock')
+                        .update({
+                            is_sold: true,
+                            buyer_id: purchase.user_id,
+                            sold_at: new Date().toISOString()
+                        })
+                        .eq('id', stockItem.id)
+
+                    if (stockUpdateError) {
+                        await sendTelegramMessage(chatId, `❌ 시스템 오류: 재고 할당 실패`)
+                        return NextResponse.json({ ok: true })
+                    }
                 }
 
-                // 2. Update Stock (Mark as Sold)
-                const { error: stockUpdateError } = await supabaseAdmin
-                    .from('product_stock')
-                    .update({
-                        is_sold: true,
-                        buyer_id: purchase.user_id,
-                        sold_at: new Date().toISOString()
-                    })
-                    .eq('id', stockItem.id)
-
-                if (stockUpdateError) {
-                    await sendTelegramMessage(chatId, `❌ 시스템 오류: 재고 할당 실패`)
-                    return NextResponse.json({ ok: true })
-                }
-
-                // 3. Update Purchase Status & Decrement Video Stock Counter
+                // 3. Update Purchase Status
                 const { error: updateError } = await supabaseAdmin
                     .from('purchases')
                     .update({ status: 'completed' })
                     .eq('id', purchaseId)
 
-                // Decrement video stock display count (Optional but good for UI sync)
+                // Decrement video stock display count (Only for FIFO, but harmless for unlimited as it's huge)
                 await supabaseAdmin.rpc('decrement_stock', { video_uuid: purchase.video_id })
 
                 if (updateError) {
@@ -92,7 +140,7 @@ export async function POST(request: Request) {
                 } else {
                     const parts = purchase.payment_method?.split(':') || []
                     const name = parts.length > 2 ? parts[2] : "구매자"
-                    await sendTelegramMessage(chatId, `✅ <b>${name}</b>님의 주문이 승인되었습니다.\n📦 발송된 파일: ${stockItem.filename}\n💰 금액: ${purchase.amount.toLocaleString()}원`)
+                    await sendTelegramMessage(chatId, `✅ <b>${name}</b>님의 주문이 승인되었습니다.\n📦 발송된 파일: ${assignedFilename}\n💰 금액: ${purchase.amount.toLocaleString()}원`)
                 }
             } else if (data.startsWith("reply_chat:")) {
                 const targetUserId = data.split(":")[1]

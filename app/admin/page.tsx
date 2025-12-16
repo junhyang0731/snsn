@@ -85,6 +85,7 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingVideoId, setEditingVideoId] = useState<string | null>(null)
+  const [stockMode, setStockMode] = useState<"fifo" | "unlimited">("fifo")
 
   const router = useRouter()
   const supabase = createClient()
@@ -277,7 +278,6 @@ export default function AdminPage() {
     setIsSubmitting(true)
 
     const basePrice = Number.parseFloat(pricingTiers["1일"] || "0")
-    const stockCount = Number.parseInt(stock)
 
     if (!title || !description || !thumbnailUrl || basePrice === 0) {
       setError("모든 필드와 1일 가격은 필수입니다")
@@ -292,10 +292,17 @@ export default function AdminPage() {
       if (!user) throw new Error("사용자를 찾을 수 없습니다")
 
       const pricingMetadata = JSON.stringify(pricingTiers)
-      const fileMetadata = productFilePath
-        ? `<!--FILE_PATH:${productFilePath}-->`
-        : (productFileUrl ? `<!--FILE_URL:${productFileUrl}-->` : "")
-      const fullDescription = `${description}\n\n<!--PRICING:${pricingMetadata}-->${fileMetadata}`
+
+      let fullDescription = `${description}\n\n<!--PRICING:${pricingMetadata}-->`
+      let stockValue = 0
+
+      if (stockMode === 'unlimited') {
+        const fileMetadata = productFilePath
+          ? `<!--FILE_PATH:${productFilePath}-->`
+          : (productFileUrl ? `<!--FILE_URL:${productFileUrl}-->` : "")
+        fullDescription += fileMetadata
+        stockValue = 99999
+      }
 
       const videoData = {
         title,
@@ -304,7 +311,7 @@ export default function AdminPage() {
         thumbnail_url: thumbnailUrl,
         user_id: user.id,
         is_admin: true,
-        stock: stockCount,
+        stock: stockValue,
         game_name: gameName,
       }
 
@@ -610,9 +617,7 @@ export default function AdminPage() {
                     {video.stock !== undefined && (
                       <div className="mt-1 text-xs text-muted-foreground flex items-center justify-between">
                         <span>재고: {video.stock >= 999 ? "무제한" : `${video.stock}개`}</span>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRestock(video.id, video.stock || 0)} title="재고 입고">
-                          <Plus size={12} />
-                        </Button>
+
                       </div>
                     )}
                   </CardContent>
@@ -662,6 +667,11 @@ export default function AdminPage() {
                           <img src={thumbnailUrl} alt="Preview" className="w-full h-full object-cover" />
                         </div>
                       )}
+                      {thumbnailUrl && (
+                        <p className="text-xs text-muted-foreground mt-1 break-all bg-gray-100 p-1 rounded">
+                          URL: {thumbnailUrl}
+                        </p>
+                      )}
                     </div>
 
                     <div className="grid gap-4">
@@ -697,16 +707,77 @@ export default function AdminPage() {
                     </div>
 
                     <div className="space-y-4 rounded-md border p-4 bg-muted/20">
-                      <Label htmlFor="stock">재고 수량</Label>
-                      <Input
-                        id="stock"
-                        type="number"
-                        value={stock}
-                        onChange={(e) => setStock(e.target.value)}
-                        placeholder="999"
-                        required
-                      />
-                      <p className="text-xs text-muted-foreground">999 이상 입력 시 사실상 무제한으로 간주됩니다.</p>
+                      <Label className="flex items-center gap-2">
+                        <CreditCard size={16} /> 가격 설정 (단위: 원)
+                      </Label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        {["1일", "3일", "7일", "10일", "15일", "30일", "영구제"].map((duration) => (
+                          <div key={duration} className="space-y-2">
+                            <Label htmlFor={`price-${duration}`} className="text-xs text-muted-foreground">{duration}</Label>
+                            <Input
+                              id={`price-${duration}`}
+                              type="number"
+                              placeholder="0"
+                              value={pricingTiers[duration] || ""}
+                              onChange={(e) => handlePriceChange(duration, e.target.value)}
+                              className="text-right"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-4 rounded-md border p-4 bg-muted/20">
+                      <Label className="mb-2 block">재고 및 발송 방식</Label>
+                      <div className="flex gap-4 mb-4">
+                        <div
+                          className={`flex-1 p-4 rounded-lg border cursor-pointer transition-all ${stockMode === 'fifo' ? 'border-primary bg-primary/10 ring-2 ring-primary/20' : 'border-border bg-background hover:bg-muted'}`}
+                          onClick={() => setStockMode('fifo')}
+                        >
+                          <div className="font-bold mb-1">개별 파일 (FIFO)</div>
+                          <div className="text-xs text-muted-foreground">재고 탭에서 파일을 여러 개 업로드하면, 구매 시 가장 오래된 파일이 하나씩 발송됩니다.</div>
+                        </div>
+                        <div
+                          className={`flex-1 p-4 rounded-lg border cursor-pointer transition-all ${stockMode === 'unlimited' ? 'border-primary bg-primary/10 ring-2 ring-primary/20' : 'border-border bg-background hover:bg-muted'}`}
+                          onClick={() => setStockMode('unlimited')}
+                        >
+                          <div className="font-bold mb-1">공통 파일 (무제한)</div>
+                          <div className="text-xs text-muted-foreground">하나의 파일을 등록하여 모든 구매자에게 동일하게 발송합니다. 재고는 무제한이 됩니다.</div>
+                        </div>
+                      </div>
+
+                      {stockMode === 'unlimited' && (
+                        <div className="space-y-4 pt-4 border-t">
+                          <Label htmlFor="product-file" className="flex items-center gap-2">
+                            <FileText size={16} /> 공통 파일 업로드 (다운로드용)
+                          </Label>
+                          <div className="flex gap-4 items-end">
+                            <div className="flex-1">
+                              <Input
+                                id="product-file"
+                                type="file"
+                                onChange={handleProductFileUpload}
+                                disabled={isFileUploading}
+                              />
+                            </div>
+                            {isFileUploading && <span className="text-sm text-muted-foreground pb-2">업로드 중...</span>}
+                          </div>
+                          {productFileUrl && (
+                            <p className="text-sm text-green-600 mt-2 break-all bg-green-500/10 p-2 rounded">
+                              ✅ 파일 준비 완료
+                            </p>
+                          )}
+                          <p className="text-xs text-muted-foreground text-red-500">
+                            * 주의: 공통 파일 방식은 재고가 99999로 설정됩니다.
+                          </p>
+                        </div>
+                      )}
+
+                      {stockMode === 'fifo' && (
+                        <div className="text-sm text-blue-700 bg-blue-500/10 p-3 rounded">
+                          <p>상품 등록 후 <strong>'재고 관리(파일)' 탭</strong>에서 판매할 파일들을 업로드해주세요.</p>
+                        </div>
+                      )}
                     </div>
 
                     <div className="space-y-4 rounded-md border p-4 bg-muted/20">
@@ -730,30 +801,8 @@ export default function AdminPage() {
                       </div>
                     </div>
 
-                    <div className="space-y-4 rounded-md border p-4 bg-muted/20">
-                      <Label htmlFor="product-file" className="flex items-center gap-2">
-                        <FileText size={16} /> 제품 파일 (다운로드용)
-                      </Label>
-                      <div className="flex gap-4 items-end">
-                        <div className="flex-1">
-                          <Input
-                            id="product-file"
-                            type="file"
-                            onChange={handleProductFileUpload}
-                            disabled={isFileUploading}
-                          />
-                        </div>
-                        {isFileUploading && <span className="text-sm text-muted-foreground pb-2">업로드 중...</span>}
-                      </div>
-                      {productFileUrl && (
-                        <p className="text-sm text-green-600 mt-2 break-all bg-green-500/10 p-2 rounded">
-                          ✅ 파일 준비 완료
-                        </p>
-                      )}
-                    </div>
-
                     <Button type="submit" disabled={isSubmitting || isUploading || isFileUploading} className="w-full">
-                      {isSubmitting ? "등록 중..." : "치트 등록하기"}
+                      {isSubmitting ? "등록 중..." : editingVideoId ? "수정 완료" : "치트 등록하기"}
                     </Button>
                   </form>
                 </DialogContent>
