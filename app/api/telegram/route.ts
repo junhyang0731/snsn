@@ -31,9 +31,10 @@ export async function POST(request: Request) {
                 // ... (existing codes) ...
 
                 // (Existing approval logic)
+                // (Existing approval logic)
                 const { data: purchase, error: fetchError } = await supabaseAdmin
                     .from('purchases')
-                    .select('*')
+                    .select('*, video:videos(title)')
                     .eq('id', purchaseId)
                     .single()
 
@@ -47,17 +48,51 @@ export async function POST(request: Request) {
                     return NextResponse.json({ ok: true })
                 }
 
+                // 1. Check & Lock Stock (FIFO)
+                const { data: stockItem, error: stockError } = await supabaseAdmin
+                    .from('product_stock')
+                    .select('id, filename')
+                    .eq('product_id', purchase.video_id)
+                    .eq('is_sold', false)
+                    .order('created_at', { ascending: true })
+                    .limit(1)
+                    .single()
+
+                if (stockError || !stockItem) {
+                    await sendTelegramMessage(chatId, `⚠️ 승인 실패: '${purchase.video?.title || "상품"}' 재고가 부족합니다!\n(관리자 페이지에서 재고를 추가해주세요)`)
+                    return NextResponse.json({ ok: true })
+                }
+
+                // 2. Update Stock (Mark as Sold)
+                const { error: stockUpdateError } = await supabaseAdmin
+                    .from('product_stock')
+                    .update({
+                        is_sold: true,
+                        buyer_id: purchase.user_id,
+                        sold_at: new Date().toISOString()
+                    })
+                    .eq('id', stockItem.id)
+
+                if (stockUpdateError) {
+                    await sendTelegramMessage(chatId, `❌ 시스템 오류: 재고 할당 실패`)
+                    return NextResponse.json({ ok: true })
+                }
+
+                // 3. Update Purchase Status & Decrement Video Stock Counter
                 const { error: updateError } = await supabaseAdmin
                     .from('purchases')
                     .update({ status: 'completed' })
                     .eq('id', purchaseId)
+
+                // Decrement video stock display count (Optional but good for UI sync)
+                await supabaseAdmin.rpc('decrement_stock', { video_uuid: purchase.video_id })
 
                 if (updateError) {
                     await sendTelegramMessage(chatId, `❌ 승인 실패: ${updateError.message}`)
                 } else {
                     const parts = purchase.payment_method?.split(':') || []
                     const name = parts.length > 2 ? parts[2] : "구매자"
-                    await sendTelegramMessage(chatId, `✅ <b>${name}</b>님의 주문이 승인되었습니다.\n금액: ${purchase.amount.toLocaleString()}원`)
+                    await sendTelegramMessage(chatId, `✅ <b>${name}</b>님의 주문이 승인되었습니다.\n📦 발송된 파일: ${stockItem.filename}\n💰 금액: ${purchase.amount.toLocaleString()}원`)
                 }
             } else if (data.startsWith("reply_chat:")) {
                 const targetUserId = data.split(":")[1]
