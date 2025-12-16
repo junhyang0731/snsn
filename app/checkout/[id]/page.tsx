@@ -154,6 +154,14 @@ export default function CheckoutPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user || !video) throw new Error("데이터 없음")
 
+      // Stock Check
+      const { data: latestVideo } = await supabase.from('videos').select('stock').eq('id', video.id).single()
+
+      const currentStock = latestVideo?.stock ?? 0;
+      if (latestVideo?.stock !== undefined && currentStock <= 0) {
+        throw new Error("재고가 소진되었습니다")
+      }
+
       const { data, error } = await supabase
         .from("purchases")
         .insert({
@@ -163,6 +171,7 @@ export default function CheckoutPage() {
           amount: video.price,
           status: "pending",
           bitcoin_address: address, // Reusing column or need new one? 'bitcoin_address' works as generic address field
+          stock_quantity_at_purchase: currentStock
         })
         .select()
         .single()

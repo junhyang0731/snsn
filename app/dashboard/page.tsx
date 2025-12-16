@@ -80,10 +80,7 @@ export default function DashboardPage() {
                   <p className="text-sm text-muted-foreground">이메일</p>
                   <p className="text-lg">{profile.email}</p>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">비트코인 잔액</p>
-                  <p className="text-lg font-bold text-primary">${profile.coin_balance.toFixed(2)}</p>
-                </div>
+
               </CardContent>
             </Card>
 

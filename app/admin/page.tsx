@@ -423,19 +423,26 @@ export default function AdminPage() {
   }
 
   const handleConfirmPayment = async (purchaseId: string) => {
-    if (!confirm("이 구매를 승인하시겠습니까?")) return
+    if (!confirm("이 구매를 승인하시겠습니까? (재고가 자동으로 할당됩니다)")) return
 
     try {
-      const { error } = await supabase
-        .from("purchases")
-        .update({ status: "completed" })
-        .eq("id", purchaseId)
+      const response = await fetch("/api/admin/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ purchaseId }),
+      })
 
-      if (error) throw error
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "승인 실패")
+      }
 
       setPurchases(purchases.map(p => p.id === purchaseId ? { ...p, status: "completed" } : p))
-    } catch (error) {
-      setError("승인 처리에 실패했습니다")
+      alert("구매가 승인되고 파일이 할당되었습니다.")
+    } catch (error: any) {
+      alert(`오류: ${error.message}`)
+      // setError(error.message) // Optional
     }
   }
 
