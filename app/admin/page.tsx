@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import AdminChatTab from "@/components/admin-chat-tab"
 import AdminStockTab from "@/components/admin-stock-tab"
 import AdminPatchNotesTab from "@/components/admin-patch-notes-tab"
+import AdminDistributionTab from "@/components/admin-distribution-tab"
 
 interface Video {
   id: string
@@ -573,14 +574,19 @@ export default function AdminPage() {
         )}
 
         <Tabs defaultValue="videos" className="w-full">
-          <TabsList className="grid w-full grid-cols-6 mb-8">
+          <TabsList className="grid w-full grid-cols-7 mb-8">
             <TabsTrigger value="videos">치트 관리</TabsTrigger>
             <TabsTrigger value="stock">재고 관리 (파일)</TabsTrigger>
             <TabsTrigger value="purchases">구매 내역</TabsTrigger>
             <TabsTrigger value="notices">공지 및 팝업</TabsTrigger>
             <TabsTrigger value="reviews">리뷰 관리</TabsTrigger>
             <TabsTrigger value="chat">1:1 답변</TabsTrigger>
+            <TabsTrigger value="distribution">배포 설정</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="distribution">
+            <AdminDistributionTab />
+          </TabsContent>
 
           <TabsContent value="stock">
             <AdminStockTab />
