@@ -76,18 +76,25 @@ export async function POST(req: Request) {
             if (insertError) throw insertError
 
         } else {
-            // [FIFO Mode] Find Oldest Available Stock
+            // [FIFO Mode] Find Oldest Available Stock related to duration
+            const duration = (purchase as any).duration || '1일'
+
             const { data: stockItem, error: stockError } = await supabase
                 .from("product_stock")
                 .select("*")
                 .eq("product_id", purchase.video_id)
                 .eq("is_sold", false)
+                // Filter by Duration (if column exists, otherwise SQL error -> User needs to run SQL)
+                .eq("duration", duration)
                 .order("created_at", { ascending: true }) // FIFO
                 .limit(1)
                 .single()
 
             if (stockError || !stockItem) {
-                return NextResponse.json({ error: "재고가 부족하여 승인할 수 없습니다." }, { status: 409 })
+                // If error is related to missing column 'duration', it will fail here.
+                // We should handle that gracefully or assume user runs SQL.
+                // For now, let's assume SQL is run.
+                return NextResponse.json({ error: `재고 부족: '${duration}' 재고가 없습니다.` }, { status: 409 })
             }
 
             // Update Stock (Mark as Sold)

@@ -319,7 +319,7 @@ export default function ProductDetailPage() {
                                 </div>
 
                                 <Button
-                                    onClick={() => router.push(`/checkout/${selectedProduct.id}`)}
+                                    onClick={() => router.push(`/checkout/${selectedProduct.id}?duration=${encodeURIComponent(selectedDuration)}&price=${finalPrice}`)}
                                     className="w-full mb-4"
                                     size="lg"
                                     disabled={selectedProduct.stock !== undefined && selectedProduct.stock <= 0}

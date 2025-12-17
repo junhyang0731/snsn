@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -33,6 +33,7 @@ const BANK_LIST = [
 export default function CheckoutPage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [video, setVideo] = useState<Video | null>(null)
   const [paymentMethod, setPaymentMethod] = useState<"bank" | "bitcoin" | "litecoin" | "tron" | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -61,6 +62,10 @@ export default function CheckoutPage() {
 
         const { data: videoData } = await supabase.from("videos").select("*").eq("id", params.id).single()
 
+        if (searchParams.get("price")) {
+          // Override price if provided in URL (e.g. 30days option)
+          (videoData as any).price = Number(searchParams.get("price"))
+        }
         setVideo(videoData as Video)
       } catch (error) {
         console.error("데이터 로드 실패:", error)
@@ -127,7 +132,8 @@ export default function CheckoutPage() {
           amount: video?.price,
           status: "pending",
           bank_account: "토스뱅크 (계좌번호는 추후 안내)",
-          stock_quantity_at_purchase: latestVideo?.stock
+          stock_quantity_at_purchase: latestVideo?.stock,
+          duration: searchParams.get("duration") || "1일"
         })
         .select()
         .single()
@@ -171,7 +177,8 @@ export default function CheckoutPage() {
           amount: video.price,
           status: "pending",
           bitcoin_address: address, // Reusing column or need new one? 'bitcoin_address' works as generic address field
-          stock_quantity_at_purchase: currentStock
+          stock_quantity_at_purchase: currentStock,
+          duration: searchParams.get("duration") || "1일"
         })
         .select()
         .single()

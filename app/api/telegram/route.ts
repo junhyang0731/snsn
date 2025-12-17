@@ -28,10 +28,7 @@ export async function POST(request: Request) {
 
             if (data.startsWith("approve:")) {
                 const purchaseId = data.split(":")[1]
-                // ... (existing codes) ...
 
-                // (Existing approval logic)
-                // (Existing approval logic)
                 const { data: purchase, error: fetchError } = await supabaseAdmin
                     .from('purchases')
                     .select('*, video:videos(title, stock, description)')
@@ -49,26 +46,26 @@ export async function POST(request: Request) {
                 }
 
                 // Check for Unlimited Stock (Common File)
-                const videoData = purchase.video as any // Type assertion needed if TS complains
+                const videoData = purchase.video as any
                 const priceMatch = videoData?.description?.match(/<!--PRICING:(.*?)-->/)
                 const fileMatch = videoData?.description?.match(/<!--FILE_URL:(.*?)-->/)
                 const pathMatch = videoData?.description?.match(/<!--FILE_PATH:(.*?)-->/)
 
                 const isUnlimited = (videoData?.stock >= 99990) || !!fileMatch || !!pathMatch
-                let assignedFilename = "download.zip" // To capture filename for message
+                let assignedContent = "download.zip" // Filename or Key
 
                 if (isUnlimited) {
                     // [Unlimited Mode]
                     let fileUrl = ""
                     if (fileMatch && fileMatch[1]) {
                         fileUrl = fileMatch[1]
-                        assignedFilename = "Common File"
+                        assignedContent = "Common File"
                     } else if (pathMatch && pathMatch[1]) {
                         const { data: { publicUrl } } = supabaseAdmin.storage
                             .from("product-files")
                             .getPublicUrl(pathMatch[1])
                         fileUrl = publicUrl
-                        assignedFilename = pathMatch[1].split('/').pop() || "download.zip"
+                        assignedContent = pathMatch[1].split('/').pop() || "download.zip"
                     }
 
                     if (!fileUrl) {
@@ -81,7 +78,7 @@ export async function POST(request: Request) {
                         .insert({
                             product_id: purchase.video_id,
                             content: "Unlimited Stock Item",
-                            filename: assignedFilename,
+                            filename: assignedContent,
                             file_url: fileUrl,
                             is_sold: true,
                             buyer_id: purchase.user_id,
@@ -95,21 +92,26 @@ export async function POST(request: Request) {
 
                 } else {
                     // [FIFO Mode]
+                    const duration = purchase.duration || '1일'
+
                     const { data: stockItem, error: stockError } = await supabaseAdmin
                         .from('product_stock')
-                        .select('id, filename')
+                        .select('id, filename, key_content')
                         .eq('product_id', purchase.video_id)
                         .eq('is_sold', false)
+                        .eq('duration', duration) // Filter by duration
                         .order('created_at', { ascending: true })
                         .limit(1)
                         .single()
 
                     if (stockError || !stockItem) {
-                        await sendTelegramMessage(chatId, `⚠️ 승인 실패: '${purchase.video?.title || "상품"}' 재고가 부족합니다!`)
+                        await sendTelegramMessage(chatId, `⚠️ 승인 실패: '${purchase.video?.title || "상품"}' [${duration}] 재고가 부족합니다!`)
                         return NextResponse.json({ ok: true })
                     }
 
-                    assignedFilename = stockItem.filename
+                    assignedContent = stockItem.key_content
+                        ? `Key: ${stockItem.key_content}`
+                        : (stockItem.filename || "Unknown")
 
                     const { error: stockUpdateError } = await supabaseAdmin
                         .from('product_stock')
@@ -140,7 +142,7 @@ export async function POST(request: Request) {
                 } else {
                     const parts = purchase.payment_method?.split(':') || []
                     const name = parts.length > 2 ? parts[2] : "구매자"
-                    await sendTelegramMessage(chatId, `✅ <b>${name}</b>님의 주문이 승인되었습니다.\n📦 발송된 파일: ${assignedFilename}\n💰 금액: ${purchase.amount.toLocaleString()}원`)
+                    await sendTelegramMessage(chatId, `✅ <b>${name}</b>님의 주문이 승인되었습니다.\n📦 발송: ${assignedContent}\n💰 금액: ${purchase.amount.toLocaleString()}원`)
                 }
             } else if (data.startsWith("reply_chat:")) {
                 const targetUserId = data.split(":")[1]
@@ -152,51 +154,32 @@ export async function POST(request: Request) {
         }
 
         // 2. Handle Message
-        if (!update.message || !update.message.text) {
-            return NextResponse.json({ ok: true })
-        }
+        if (!update.message || !update.message.text) return NextResponse.json({ ok: true })
 
         const chatId = update.message.chat.id
         const text = update.message.text.trim()
 
-        // Handle Reply to Chat Message
         if (update.message.reply_to_message) {
             const originalText = update.message.reply_to_message.text
             const match = originalText.match(/\[user:([a-f0-9-]+)\]/)
-
             if (match && match[1]) {
                 const targetUserId = match[1]
-
-                // Insert into messages table
                 const { error } = await supabaseAdmin.from('messages').insert({
-                    user_id: targetUserId,
-                    content: text,
-                    is_admin: true
+                    user_id: targetUserId, content: text, is_admin: true
                 })
-
-                if (error) {
-                    await sendTelegramMessage(chatId, `❌ 전송 실패: ${error.message}`)
-                } else {
-                    await sendTelegramMessage(chatId, `✅ 전송 완료`)
-                }
+                if (error) await sendTelegramMessage(chatId, `❌ 전송 실패: ${error.message}`)
+                else await sendTelegramMessage(chatId, `✅ 전송 완료`)
                 return NextResponse.json({ ok: true })
             }
         }
 
-        // Command: /start (Register Admin)
         if (text === "/start") {
-            // Create table if not exists (Hack, better via SQL)
-            // We just insert to 'admin_telegram_ids'
             const { error } = await supabaseAdmin.from('admin_telegram_ids').upsert({ chat_id: chatId })
-            if (error) {
-                await sendTelegramMessage(chatId, "❌ 등록 실패. 'admin_telegram_ids' 테이블이 있는지 확인하세요.")
-            } else {
-                await sendTelegramMessage(chatId, "✅ 관리자 알림이 등록되었습니다.")
-            }
+            if (error) await sendTelegramMessage(chatId, "❌ 등록 실패")
+            else await sendTelegramMessage(chatId, "✅ 관리자 알림이 등록되었습니다.")
             return NextResponse.json({ ok: true })
         }
 
-        // Command: /전체
         if (text === "/전체") {
             const { data: purchases, error } = await supabaseAdmin
                 .from('purchases')
@@ -204,12 +187,7 @@ export async function POST(request: Request) {
                 .eq('status', 'pending')
                 .order('created_at', { ascending: false })
 
-            if (error) {
-                await sendTelegramMessage(chatId, "DB Error")
-                return NextResponse.json({ ok: true })
-            }
-
-            if (!purchases || purchases.length === 0) {
+            if (error || !purchases || purchases.length === 0) {
                 await sendTelegramMessage(chatId, "현재 대기 중인 입금 내역이 없습니다.")
                 return NextResponse.json({ ok: true })
             }
@@ -222,47 +200,33 @@ export async function POST(request: Request) {
                 msg += `${i + 1}. <b>${name}</b> (${bank})\n   💰 ${p.amount.toLocaleString()}원 | ${p.video?.title}\n\n`
             })
             msg += "이름을 입력하면 승인 메뉴가 뜹니다."
-
             await sendTelegramMessage(chatId, msg)
             return NextResponse.json({ ok: true })
         }
 
-        // Command: Depositor Name (Search)
         const depositorName = text.split(' ')[0]
-
         const { data: purchases, error } = await supabaseAdmin
             .from('purchases')
             .select('*, video:videos(title)')
             .eq('status', 'pending')
             .ilike('payment_method', `%:${depositorName}`)
 
-        if (error) {
-            await sendTelegramMessage(chatId, `Error: ${error.message}`)
-            return NextResponse.json({ ok: true })
-        }
-
-        if (!purchases || purchases.length === 0) {
+        if (error || !purchases || purchases.length === 0) {
             await sendTelegramMessage(chatId, `❌ '${depositorName}' 님으로 대기 중인 주문이 없습니다.`)
             return NextResponse.json({ ok: true })
         }
 
-        // Show interactive approval for each match
         for (const p of purchases) {
             const parts = p.payment_method?.split(':') || []
             const bank = parts[1] || "은행미상"
             const name = parts[2] || "이름미상"
-
             const message = `🔎 <b>입금 확인 요청</b>\n\n🏦 <b>${bank} ${name}</b> 이 맞습니까?\n💰 필요 금액: <b>${p.amount.toLocaleString()}원</b>\n📦 상품: ${p.video?.title}\n\n승인하시겠습니까?`
-
             await sendTelegramMessage(chatId, message, {
                 reply_markup: {
-                    inline_keyboard: [[
-                        { text: "✅ 승인하기", callback_data: `approve:${p.id}` }
-                    ]]
+                    inline_keyboard: [[{ text: "✅ 승인하기", callback_data: `approve:${p.id}` }]]
                 }
             })
         }
-
         return NextResponse.json({ ok: true })
 
     } catch (error) {
@@ -270,5 +234,3 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
     }
 }
-
-

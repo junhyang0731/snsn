@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Download, AlertCircle, Clock, CheckCircle2 } from "lucide-react"
+import { Download, AlertCircle, Clock, CheckCircle2, Key } from "lucide-react"
 import Link from "next/link"
 
 interface MyPurchase {
@@ -162,16 +162,36 @@ export default function MyPurchasesPage() {
                       <div className="mt-4">
                         {purchase.status === 'completed' ? (
                           purchase.stock_item ? (
-                            <div className="flex bg-green-500/10 border border-green-500/20 rounded-lg p-3 items-center justify-between">
-                              <div className="flex items-center gap-2 text-green-700">
-                                <CheckCircle2 size={18} />
-                                <span className="font-medium text-sm">상품이 준비되었습니다.</span>
-                                <span className="text-xs opacity-70">({purchase.stock_item.filename})</span>
+                            (purchase.stock_item as any).key_content ? (
+                              <div className="space-y-2 w-full">
+                                <div className="flex bg-purple-500/10 border border-purple-500/20 rounded-lg p-3 items-center justify-between">
+                                  <div className="flex items-center gap-2 text-purple-700">
+                                    <Key size={18} />
+                                    <span className="font-medium text-sm">라이선스 키</span>
+                                  </div>
+                                  <Button size="sm" variant="outline" onClick={() => {
+                                    navigator.clipboard.writeText((purchase.stock_item as any).key_content)
+                                    alert("키가 복사되었습니다.")
+                                  }}>
+                                    복사하기
+                                  </Button>
+                                </div>
+                                <div className="p-3 bg-secondary rounded font-mono text-sm break-all">
+                                  {(purchase.stock_item as any).key_content}
+                                </div>
                               </div>
-                              <Button size="sm" className="gap-2" onClick={() => handleDownload(purchase.stock_item!.id)}>
-                                <Download size={16} /> 다운로드
-                              </Button>
-                            </div>
+                            ) : (
+                              <div className="flex bg-green-500/10 border border-green-500/20 rounded-lg p-3 items-center justify-between">
+                                <div className="flex items-center gap-2 text-green-700">
+                                  <CheckCircle2 size={18} />
+                                  <span className="font-medium text-sm">다운로드 준비 완료</span>
+                                  <span className="text-xs opacity-70">({purchase.stock_item.filename})</span>
+                                </div>
+                                <Button size="sm" className="gap-2" onClick={() => handleDownload(purchase.stock_item!.id)}>
+                                  <Download size={16} /> 다운로드
+                                </Button>
+                              </div>
+                            )
                           ) : (
                             <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 flex items-center gap-2 text-yellow-700">
                               <AlertCircle size={18} />
